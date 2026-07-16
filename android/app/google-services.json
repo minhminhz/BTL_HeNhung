@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "861060933562",
+    "firebase_url": "https://smartdoor-fc63e-default-rtdb.firebaseio.com",
+    "project_id": "smartdoor-fc63e",
+    "storage_bucket": "smartdoor-fc63e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861060933562:android:764ce8a54a0deb86a2df83",
+        "android_client_info": {
+          "package_name": "com.example.iot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDq_iq6tkiebHmkCUiw3Ry70MdN3MesEs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

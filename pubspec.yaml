@@ -1,0 +1,26 @@
+name: smart_door_app
+description: "App quản lý cửa thông minh IoT dùng Firebase"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # --- THƯ VIỆN KẾT NỐI FIREBASE ---
+  firebase_core: ^4.5.0
+  firebase_database: ^12.1.4
+  firebase_auth: ^6.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
