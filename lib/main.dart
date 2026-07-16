@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -66,34 +67,39 @@ class _MainScreenState extends State<MainScreen> {
   String _userRole = 'unauthorized';
   String _userName = '';
 
+  StreamSubscription? _userSubscription;
+
   @override
   void initState() {
     super.initState();
-    _checkUserPermission();
+    _listenUserPermission();
   }
 
+  @override
+  void dispose() {
+    _userSubscription?.cancel();
+    super.dispose();
+  }
 
-  Future<void> _checkUserPermission() async {
-    try {
-      User? currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
+  void _listenUserPermission() {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
-      String currentEmail = currentUser.email ?? '';
+    String currentEmail = currentUser.email ?? '';
+    DatabaseReference usersRef = FirebaseDatabase.instance.ref('home/users');
 
-      // Tăng thời gian chờ (timeout) để tránh treo vô hạn
-      DatabaseReference usersRef = FirebaseDatabase.instance.ref('home/users');
-      DatabaseEvent event = await usersRef.orderByChild('email').equalTo(currentEmail).once().timeout(const Duration(seconds: 10));
-
+    // Lắng nghe thay đổi quyền theo thời gian thực
+    _userSubscription = usersRef.orderByChild('email').equalTo(currentEmail.toLowerCase()).onValue.listen((event) {
       if (mounted) {
         if (event.snapshot.value != null) {
           Map<dynamic, dynamic> usersData = event.snapshot.value as Map<dynamic, dynamic>;
           var userData = usersData.values.first;
 
           setState(() {
-            _userRole = userData['role'] ?? 'member';
+            _userRole = userData['role'] ?? 'unauthorized';
             _userName = userData['name'] ?? 'Thành viên';
             _isLoading = false;
           });
@@ -104,18 +110,15 @@ class _MainScreenState extends State<MainScreen> {
           });
         }
       }
-    } catch (e) {
-      debugPrint("Lỗi Firebase: $e");
+    }, onError: (error) {
+      debugPrint("Lỗi Firebase: $error");
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _userRole = 'error'; // Đánh dấu trạng thái lỗi
+          _userRole = 'error';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi kết nối: ${e.toString()}'), backgroundColor: Colors.red),
-        );
       }
-    }
+    });
   }
   // HÀM HIỆN KHUNG ĐỔI MẬT KHẨU TÀI KHOẢN
     void _showChangePasswordDialog(BuildContext context) {
@@ -194,7 +197,7 @@ class _MainScreenState extends State<MainScreen> {
                 padding: EdgeInsets.all(20),
                 child: Text("Vui lòng kiểm tra lại cấu hình Rules trên Firebase hoặc kết nối mạng của bạn.", textAlign: TextAlign.center),
               ),
-              ElevatedButton(onPressed: _checkUserPermission, child: const Text("Thử lại")),
+              ElevatedButton(onPressed: _listenUserPermission, child: const Text("Thử lại")),
               TextButton(onPressed: () => FirebaseAuth.instance.signOut(), child: const Text("Đăng xuất và dùng email khác")),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -11,33 +12,68 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   bool _isLogin = true; // true: Đang ở chế độ Đăng nhập, false: Chế độ Đăng ký
   bool _isLoading = false;
-  bool _isPasswordVisible =false;
+  bool _isPasswordVisible = false;
+
   void _submitAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (!_isLogin && name.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin!'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       if (_isLogin) {
         // ĐĂNG NHẬP
         await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       } else {
         // ĐĂNG KÝ TÀI KHOẢN MỚI
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
         );
+
+        // Sau khi tạo tài khoản Auth thành công, lưu thông tin vào Realtime Database
+        if (userCredential.user != null) {
+          DatabaseReference db = FirebaseDatabase.instance.ref('home/users');
+          await db.push().set({
+            'name': name,
+            'email': email.toLowerCase(),
+            'role': 'unauthorized', // Quyền mặc định là chưa được cấp phép
+            'rfid_code': '', // Trống để Admin cấp sau
+            'uid': userCredential.user!.uid,
+            'createdAt': ServerValue.timestamp,
+          });
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng ký thành công! Đợi Admin cấp quyền.'), backgroundColor: Colors.green),
+        );
+        setState(() => _isLogin = true); // Chuyển về màn hình đăng nhập
       }
-      // Không cần dùng Navigator ở đây vì đã có StreamBuilder ở main.dart lo
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message ?? 'Có lỗi xảy ra!'), backgroundColor: Colors.red),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+      );
     }
-    if(mounted){
-        setState(() => _isLoading = false);
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -80,6 +116,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 40),
+
+              // Ô nhập Tên (Chỉ hiện khi Đăng ký)
+              if (!_isLogin) ...[
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Họ và tên',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // Ô nhập Email
               TextField(

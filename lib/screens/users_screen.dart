@@ -43,7 +43,8 @@ class UsersScreen extends StatelessWidget {
                       decoration: const InputDecoration(labelText: 'Quyền hạn', prefixIcon: Icon(Icons.admin_panel_settings)),
                       items: const [
                         DropdownMenuItem(value: 'admin', child: Text('Quản trị viên (Admin)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
-                        DropdownMenuItem(value: 'member', child: Text('Thành viên (Member)')),
+                        DropdownMenuItem(value: 'member', child: Text('Thành viên (Member)', style: TextStyle(color: Colors.green))),
+                        DropdownMenuItem(value: 'unauthorized', child: Text('Chờ duyệt / Từ chối', style: TextStyle(color: Colors.grey))),
                       ],
                       onChanged: (value) => setState(() => role = value!),
                     ),
@@ -114,23 +115,45 @@ class UsersScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               var user = usersList[index].value;
               var key = usersList[index].key;
-              bool isAdmin = user['role'] == 'admin';
+              String role = user['role'] ?? 'unauthorized';
+              
+              bool isAdmin = role == 'admin';
+              bool isUnauthorized = role == 'unauthorized';
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                elevation: isUnauthorized ? 0 : 2,
+                shape: isUnauthorized 
+                  ? RoundedRectangleBorder(side: const BorderSide(color: Colors.orange, width: 1), borderRadius: BorderRadius.circular(10))
+                  : null,
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isAdmin ? Colors.redAccent : Colors.blueAccent,
-                    child: Icon(isAdmin ? Icons.admin_panel_settings : Icons.person, color: Colors.white)
+                    backgroundColor: isAdmin ? Colors.redAccent : (isUnauthorized ? Colors.orange : Colors.blueAccent),
+                    child: Icon(
+                      isAdmin ? Icons.admin_panel_settings : (isUnauthorized ? Icons.person_add_disabled : Icons.person), 
+                      color: Colors.white
+                    )
                   ),
-                  title: Text(user['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Row(
+                    children: [
+                      Text(user['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (isUnauthorized)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(10)),
+                          child: const Text('CHỜ DUYỆT', style: TextStyle(color: Colors.white, fontSize: 10)),
+                        ),
+                    ],
+                  ),
                   subtitle: Text('${user['email']}\nRFID: ${user['rfid_code'] ?? 'Trống'}'),
                   isThreeLine: true,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        icon: Icon(isUnauthorized ? Icons.how_to_reg : Icons.edit, color: isUnauthorized ? Colors.green : Colors.orange),
+                        tooltip: isUnauthorized ? 'Duyệt tài khoản' : 'Sửa',
                         onPressed: () => _showUserDialog(
                           context,
                           userKey: key,
@@ -142,7 +165,25 @@ class UsersScreen extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => usersRef.child(key).remove(),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Xác nhận xóa'),
+                              content: Text('Bạn có chắc muốn xóa tài khoản ${user['name']}?'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+                                TextButton(
+                                  onPressed: () {
+                                    usersRef.child(key).remove();
+                                    Navigator.pop(ctx);
+                                  }, 
+                                  child: const Text('Xóa', style: TextStyle(color: Colors.red))
+                                ),
+                              ],
+                            )
+                          );
+                        },
                       ),
                     ],
                   ),

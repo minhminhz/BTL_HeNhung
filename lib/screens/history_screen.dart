@@ -56,14 +56,37 @@ class HistoryScreen extends StatelessWidget {
             );
           }
 
-          Map<dynamic, dynamic> logsMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-          List<MapEntry> logsList = logsMap.entries.toList().reversed.toList();
+          // Chuyển đổi dữ liệu linh hoạt dù Firebase trả về Map hay List
+          dynamic data = snapshot.data!.snapshot.value;
+          List<Map<dynamic, dynamic>> logsList = [];
+
+          if (data is Map) {
+            data.forEach((key, value) {
+              if (value is Map) {
+                logsList.add(Map<dynamic, dynamic>.from(value));
+              }
+            });
+          } else if (data is List) {
+            for (var item in data) {
+              if (item != null && item is Map) {
+                logsList.add(Map<dynamic, dynamic>.from(item));
+              }
+            }
+          }
+
+          // Đảo ngược danh sách để hiện tin mới nhất lên đầu
+          logsList = logsList.reversed.toList();
+
+          if (logsList.isEmpty) {
+            return const Center(child: Text('Lịch sử chưa có dữ liệu hợp lệ'));
+          }
 
           return ListView.builder(
             itemCount: logsList.length,
             itemBuilder: (context, index) {
-              var log = logsList[index].value;
-              bool isClose = log['action'].toString().contains('Đóng');
+              var log = logsList[index];
+              String action = log['action']?.toString() ?? 'Không rõ';
+              bool isClose = action.contains('Đóng');
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -76,13 +99,13 @@ class HistoryScreen extends StatelessWidget {
                       color: isClose ? Colors.red : Colors.green,
                     ),
                   ),
-                  title: Text(log['action'] ?? 'Không rõ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(log['time'] ?? 'No time'),
+                  title: Text(action, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(log['time']?.toString() ?? 'Không có thời gian'),
                   trailing: Text(
-                    log['user'] ?? '',
+                    log['user']?.toString() ?? '',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: log['user'] == 'Hệ thống' ? Colors.grey : Colors.blue
+                      color: log['user']?.toString() == 'Hệ thống' ? Colors.grey : Colors.blue
                     )
                   ),
                 ),
