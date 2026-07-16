@@ -40,17 +40,18 @@ class HistoryScreen extends StatelessWidget {
     DatabaseReference logsRef = FirebaseDatabase.instance.ref('home/logs');
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: StreamBuilder(
         stream: logsRef.onValue,
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history_toggle_off, size: 80, color: Colors.grey),
-                  SizedBox(height: 10),
-                  Text('Lịch sử trống', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  Text('Lịch sử đang trống', style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
                 ],
               ),
             );
@@ -78,35 +79,76 @@ class HistoryScreen extends StatelessWidget {
           logsList = logsList.reversed.toList();
 
           if (logsList.isEmpty) {
-            return const Center(child: Text('Lịch sử chưa có dữ liệu hợp lệ'));
+            return Center(
+              child: Text('Lịch sử chưa có dữ liệu hợp lệ', style: TextStyle(color: Colors.grey.shade500)),
+            );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: logsList.length,
             itemBuilder: (context, index) {
               var log = logsList[index];
               String action = log['action']?.toString() ?? 'Không rõ';
               bool isClose = action.contains('Đóng');
+              String user = log['user']?.toString() ?? 'Ẩn danh';
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                elevation: 2,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isClose ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
-                    child: Icon(
-                      isClose ? Icons.lock : Icons.lock_open,
-                      color: isClose ? Colors.red : Colors.green,
-                    ),
-                  ),
-                  title: Text(action, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(log['time']?.toString() ?? 'Không có thời gian'),
-                  trailing: Text(
-                    log['user']?.toString() ?? '',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: log['user']?.toString() == 'Hệ thống' ? Colors.grey : Colors.blue
-                    )
+                elevation: 0,
+                color: Colors.white,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.grey.shade100),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isClose ? Colors.red.shade50 : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          isClose ? Icons.lock_rounded : Icons.lock_open_rounded,
+                          color: isClose ? Colors.red.shade700 : Colors.green.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              action,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              log['time']?.toString() ?? 'Không rõ thời gian',
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: user == 'Hệ thống' ? Colors.grey.shade100 : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          user,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: user == 'Hệ thống' ? Colors.grey : Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -114,15 +156,16 @@ class HistoryScreen extends StatelessWidget {
           );
         },
       ),
-      // 👈 2. KIỂM TRA QUYỀN TRƯỚC KHI HIỆN NÚT DỌN RÁC
       floatingActionButton: isAdmin
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               onPressed: () => _showClearHistoryDialog(context),
-              backgroundColor: Colors.red,
-              tooltip: 'Dọn dẹp lịch sử',
-              child: const Icon(Icons.delete_sweep, color: Colors.white),
+              backgroundColor: Colors.red.shade50,
+              foregroundColor: Colors.red,
+              elevation: 0,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              label: const Text('Xóa lịch sử', style: TextStyle(fontWeight: FontWeight.bold)),
             )
-          : null, // Nếu không phải Admin thì ẩn hoàn toàn (trả về null)
+          : null,
     );
   }
 }

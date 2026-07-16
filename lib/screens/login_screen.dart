@@ -102,92 +102,142 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.home_work, size: 100, color: Colors.blue),
-              const SizedBox(height: 20),
-              Text(
-                _isLogin ? 'ĐĂNG NHẬP HỆ THỐNG' : 'TẠO TÀI KHOẢN MỚI',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.blue.shade800, Colors.blue.shade400],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.door_front_door_rounded, size: 64, color: Colors.blue),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      _isLogin ? 'Chào mừng trở lại' : 'Tạo tài khoản mới',
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _isLogin ? 'Đăng nhập để điều khiển ngôi nhà của bạn' : 'Đăng ký để bắt đầu trải nghiệm smart home',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                    const SizedBox(height: 32),
 
-              // Ô nhập Tên (Chỉ hiện khi Đăng ký)
-              if (!_isLogin) ...[
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Họ và tên',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                    // Ô nhập Tên (Chỉ hiện khi Đăng ký)
+                    if (!_isLogin) ...[
+                      TextField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Họ và tên',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          prefixIcon: const Icon(Icons.person_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
-              // Ô nhập Email
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder(), prefixIcon: Icon(Icons.email)),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 20),
+                    // Ô nhập Email
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
 
-              // Ô nhập Mật khẩu
-              TextField(
-                controller: _passwordController,
-                obscureText: !_isPasswordVisible,
-                decoration:  InputDecoration(
-                    labelText: 'Mật khẩu',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                        icon: Icon(
+                    // Ô nhập Mật khẩu
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: !_isPasswordVisible,
+                      decoration: InputDecoration(
+                        labelText: 'Mật khẩu',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
                             _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                             color: Colors.grey,
+                          ),
+                          onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                         ),
-                        onPressed:(){
-                            setState((){
-                                _isPasswordVisible = !_isPasswordVisible;
-                            });
-                        }
-                    )
-                ),
-              ),
-              const SizedBox(height: 30),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
 
-              // Nút Bấm Xử lý
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _submitAuth,
-                      style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                      child: Text(_isLogin ? 'ĐĂNG NHẬP' : 'ĐĂNG KÝ', style: const TextStyle(fontSize: 18)),
+                    // Nút Bấm Xử lý
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: ElevatedButton(
+                              onPressed: _submitAuth,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade700,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              child: Text(_isLogin ? 'ĐĂNG NHẬP' : 'ĐĂNG KÝ', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+
+                    const SizedBox(height: 16),
+
+                    // Nút Đổi chế độ Đăng nhập / Đăng ký
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _isLogin = !_isLogin;
+                        _nameController.clear();
+                      }),
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.black54, fontSize: 14),
+                          children: [
+                            TextSpan(text: _isLogin ? 'Chưa có tài khoản? ' : 'Đã có tài khoản? '),
+                            TextSpan(
+                              text: _isLogin ? 'Đăng ký ngay' : 'Đăng nhập',
+                              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
-              const SizedBox(height: 10), // Thêm khoảng trắng cho thoáng
-
-              // Nút Đổi chế độ Đăng nhập / Đăng ký
-              TextButton(
-                onPressed: () => setState(() => _isLogin = !_isLogin),
-                child: Text(
-                  _isLogin ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Quay lại đăng nhập',
-                  style: const TextStyle(color: Colors.blue)
+                    // NÚT QUÊN MẬT KHẨU
+                    if (_isLogin)
+                      TextButton(
+                        onPressed: _resetPassword,
+                        child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w500)),
+                      ),
+                  ],
                 ),
               ),
-
-              // NÚT QUÊN MẬT KHẨU (Chỉ hiện khi đang ở chế độ Đăng nhập)
-              if (_isLogin)
-                TextButton(
-                  onPressed: _resetPassword,
-                  child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                ),
-            ],
+            ),
           ),
         ),
       ),

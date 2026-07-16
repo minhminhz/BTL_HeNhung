@@ -100,17 +100,28 @@ class UsersScreen extends StatelessWidget {
     DatabaseReference usersRef = FirebaseDatabase.instance.ref('home/users');
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: StreamBuilder(
         stream: usersRef.onValue,
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-            return const Center(child: Text('Chưa có thành viên nào', style: TextStyle(fontSize: 18, color: Colors.grey)));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 80, color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  const Text('Chưa có thành viên nào', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                ],
+              ),
+            );
           }
 
           Map<dynamic, dynamic> usersMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
           List<MapEntry> usersList = usersMap.entries.toList();
 
           return ListView.builder(
+            padding: const EdgeInsets.all(16),
             itemCount: usersList.length,
             itemBuilder: (context, index) {
               var user = usersList[index].value;
@@ -121,71 +132,135 @@ class UsersScreen extends StatelessWidget {
               bool isUnauthorized = role == 'unauthorized';
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                elevation: isUnauthorized ? 0 : 2,
-                shape: isUnauthorized 
-                  ? RoundedRectangleBorder(side: const BorderSide(color: Colors.orange, width: 1), borderRadius: BorderRadius.circular(10))
-                  : null,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isAdmin ? Colors.redAccent : (isUnauthorized ? Colors.orange : Colors.blueAccent),
-                    child: Icon(
-                      isAdmin ? Icons.admin_panel_settings : (isUnauthorized ? Icons.person_add_disabled : Icons.person), 
-                      color: Colors.white
-                    )
+                elevation: 0,
+                color: Colors.white,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isUnauthorized ? Colors.orange.shade200 : Colors.grey.shade200,
+                    width: isUnauthorized ? 2 : 1,
                   ),
-                  title: Row(
-                    children: [
-                      Text(user['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if (isUnauthorized)
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () => _showUserDialog(
+                    context,
+                    userKey: key,
+                    currentName: user['name'],
+                    currentEmail: user['email'],
+                    currentRole: user['role'],
+                    currentRfid: user['rfid_code'],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
                         Container(
-                          margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(10)),
-                          child: const Text('CHỜ DUYỆT', style: TextStyle(color: Colors.white, fontSize: 10)),
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: isAdmin 
+                              ? Colors.red.shade50 
+                              : (isUnauthorized ? Colors.orange.shade50 : Colors.blue.shade50),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isAdmin ? Icons.admin_panel_settings : (isUnauthorized ? Icons.person_add_disabled : Icons.person),
+                            color: isAdmin 
+                              ? Colors.red 
+                              : (isUnauthorized ? Colors.orange : Colors.blue),
+                          ),
                         ),
-                    ],
-                  ),
-                  subtitle: Text('${user['email']}\nRFID: ${user['rfid_code'] ?? 'Trống'}'),
-                  isThreeLine: true,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(isUnauthorized ? Icons.how_to_reg : Icons.edit, color: isUnauthorized ? Colors.green : Colors.orange),
-                        tooltip: isUnauthorized ? 'Duyệt tài khoản' : 'Sửa',
-                        onPressed: () => _showUserDialog(
-                          context,
-                          userKey: key,
-                          currentName: user['name'],
-                          currentEmail: user['email'],
-                          currentRole: user['role'],
-                          currentRfid: user['rfid_code'],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Xác nhận xóa'),
-                              content: Text('Bạn có chắc muốn xóa tài khoản ${user['name']}?'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
-                                TextButton(
-                                  onPressed: () {
-                                    usersRef.child(key).remove();
-                                    Navigator.pop(ctx);
-                                  }, 
-                                  child: const Text('Xóa', style: TextStyle(color: Colors.red))
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    user['name'] ?? 'Unknown',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  if (isUnauthorized)
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'CHỜ DUYỆT',
+                                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                user['email'] ?? '',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              ),
+                              if (user['rfid_code'] != null && user['rfid_code'].toString().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.nfc, size: 14, color: Colors.blue),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'RFID: ${user['rfid_code']}',
+                                        style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            )
-                          );
-                        },
-                      ),
-                    ],
+                            ],
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                              onPressed: () => _showUserDialog(
+                                context,
+                                userKey: key,
+                                currentName: user['name'],
+                                currentEmail: user['email'],
+                                currentRole: user['role'],
+                                currentRfid: user['rfid_code'],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    title: const Text('Xác nhận xóa'),
+                                    content: Text('Bạn có chắc muốn xóa tài khoản ${user['name']}?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                        onPressed: () {
+                                          usersRef.child(key).remove();
+                                          Navigator.pop(ctx);
+                                        }, 
+                                        child: const Text('Xóa', style: TextStyle(color: Colors.white))
+                                      ),
+                                    ],
+                                  )
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -193,10 +268,11 @@ class UsersScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showUserDialog(context),
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.person_add, color: Colors.white),
+        backgroundColor: Colors.blue.shade700,
+        icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
+        label: const Text('Thêm mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
