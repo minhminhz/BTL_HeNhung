@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "home": {
+      "users": {
+        ".read": "auth != null",
+        "$user_id": {
+          ".write": "auth != null && (root.child('home/users').orderByChild('email').equalTo(auth.token.email).onValue.snapshot.val().role == 'admin' || data.child('email').val() == auth.token.email || !data.exists())"
+        }
+      },
+      "device_status": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('home/users').child(auth.uid).child('role').val() == 'admin'"
+      },
+      "control": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "logs": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "otps": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('home/users').child(auth.uid).child('role').val() == 'admin'"
+      },
+      "config": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('home/users').child(auth.uid).child('role').val() == 'admin'"
+      }
+    }
+  }
+}

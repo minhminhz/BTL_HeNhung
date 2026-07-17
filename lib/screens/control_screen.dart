@@ -2,22 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class ControlScreen extends StatelessWidget {
-  const ControlScreen({Key? key}) : super(key: key);
-
+  final String userName;
+  const ControlScreen({Key? key, required this.userName}) : super(key: key);
 
   void _toggleDoor(bool isCurrentlyOpen) {
     DatabaseReference db = FirebaseDatabase.instance.ref();
-
-
     bool newState = !isCurrentlyOpen;
 
     db.update({
-
       'home/device_status/door_lock': newState,
-
-
       'home/control/remote_open': newState,
-      'home/control/remote_user': 'Admin App'
+      'home/control/remote_user': userName,
     });
   }
 

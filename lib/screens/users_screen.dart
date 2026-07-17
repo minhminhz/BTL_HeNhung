@@ -203,6 +203,24 @@ class UsersScreen extends StatelessWidget {
                                 user['email'] ?? '',
                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                               ),
+                              if (isUnauthorized)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      usersRef.child(key).update({'role': 'member'});
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    icon: const Icon(Icons.check, size: 16),
+                                    label: const Text('Duyệt ngay', style: TextStyle(fontSize: 12)),
+                                  ),
+                                ),
                               if (user['rfid_code'] != null && user['rfid_code'].toString().isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),

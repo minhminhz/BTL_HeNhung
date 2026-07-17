@@ -13,13 +13,19 @@ import 'screens/password_screen.dart';
 
 import 'screens/login_screen.dart';
 
+import 'package:flutter/foundation.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Cấu hình để mỗi tab trình duyệt có thể đăng nhập một tài khoản khác nhau
+  if (kIsWeb) {
+    await FirebaseAuth.instance.setPersistence(Persistence.SESSION);
+  }
 
   runApp(const SmartDoorApp());
 }
@@ -58,13 +64,13 @@ class SmartDoorApp extends StatelessWidget {
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
-          if (snapshot.hasData) {
-            return const MainScreen();
+          if (snapshot.hasData && snapshot.data != null) {
+            // SỬ DỤNG ValueKey theo UID để đảm bảo mỗi phiên là độc lập, giúp đồng bộ tốt trên nhiều tab/thiết bị
+            return MainScreen(key: ValueKey(snapshot.data!.uid), user: snapshot.data!);
           }
 
           return const LoginScreen();
@@ -75,7 +81,8 @@ class SmartDoorApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  final User user;
+  const MainScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -102,16 +109,15 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _listenUserPermission() {
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
+    String currentEmail = widget.user.email ?? '';
+    if (currentEmail.isEmpty) {
       setState(() => _isLoading = false);
       return;
     }
-
-    String currentEmail = currentUser.email ?? '';
+    
     DatabaseReference usersRef = FirebaseDatabase.instance.ref('home/users');
 
-    // Lắng nghe thay đổi quyền theo thời gian thực
+    // Lắng nghe thay đổi quyền theo thời gian thực dựa trên email của User hiện tại
     _userSubscription = usersRef.orderByChild('email').equalTo(currentEmail.toLowerCase()).onValue.listen((event) {
       if (mounted) {
         if (event.snapshot.value != null) {
@@ -261,8 +267,8 @@ class _MainScreenState extends State<MainScreen> {
     bool isAdmin = _userRole == 'admin';
 
     final List<Widget> screens = isAdmin
-      ? const [ControlScreen(), UsersScreen(), OtpScreen(), HistoryScreen(isAdmin:true), PasswordScreen()]
-      : const [ControlScreen(), HistoryScreen(isAdmin:false)];
+      ? [ControlScreen(userName: _userName), const UsersScreen(), const OtpScreen(), const HistoryScreen(isAdmin:true), const PasswordScreen()]
+      : [ControlScreen(userName: _userName), const HistoryScreen(isAdmin:false)];
 
     final List<BottomNavigationBarItem> navItems = isAdmin
       ? const [
@@ -287,28 +293,33 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(isAdmin ? 'Admin Dashboard' : 'Nhà của $_userName'),
         backgroundColor: isAdmin ? Colors.blue : Colors.green,
         actions: [
-           PopupMenuButton<String>(
-                       icon: const Icon(Icons.account_circle, size: 30, color: Colors.white),
-                       onSelected: (value) async {
-                         if (value == 'logout') {
-                           await FirebaseAuth.instance.signOut();
-                         } else if (value == 'change_password') {
-                           _showChangePasswordDialog(context);
-                         }
-                       },
-                       itemBuilder: (BuildContext context) => [
-                         const PopupMenuItem(
-                           value: 'change_password',
-                           child: ListTile(leading: Icon(Icons.password, color: Colors.blue), title: Text('Đổi mật khẩu App')),
-                         ),
-                       ],
-                     ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Đăng xuất',
-            onPressed: () async => await FirebaseAuth.instance.signOut(),
-          ),
-        ],
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.account_circle, size: 30, color: Colors.white),
+          onSelected: (value) async {
+            if (value == 'logout') {
+              await FirebaseAuth.instance.signOut();
+            } else if (value == 'change_password') {
+              _showChangePasswordDialog(context);
+            }
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem(
+              value: 'change_password',
+              child: ListTile(
+                leading: Icon(Icons.password, color: Colors.blue),
+                title: Text('Đổi mật khẩu App'),
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'logout',
+              child: ListTile(
+                leading: Icon(Icons.logout, color: Colors.red),
+                title: Text('Đăng xuất'),
+              ),
+            ),
+          ],
+        ),
+      ],
       ),
       body: screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(

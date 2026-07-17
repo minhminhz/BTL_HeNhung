@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class HistoryScreen extends StatelessWidget {
-  final bool isAdmin; // 👈 1. Thêm biến nhận diện Admin
+  final bool isAdmin; 
 
-  // Yêu cầu bắt buộc phải truyền biến isAdmin vào khi mở màn hình này
   const HistoryScreen({Key? key, required this.isAdmin}) : super(key: key);
 
   void _showClearHistoryDialog(BuildContext context) {
@@ -40,7 +39,7 @@ class HistoryScreen extends StatelessWidget {
     DatabaseReference logsRef = FirebaseDatabase.instance.ref('home/logs');
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF8F9FA),
       body: StreamBuilder(
         stream: logsRef.onValue,
         builder: (context, snapshot) {
@@ -49,15 +48,14 @@ class HistoryScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.shade300),
+                  Icon(Icons.history_rounded, size: 80, color: Colors.grey.shade300),
                   const SizedBox(height: 16),
-                  Text('Lịch sử đang trống', style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+                  const Text('Chưa có lịch sử hoạt động', style: TextStyle(fontSize: 16, color: Colors.grey)),
                 ],
               ),
             );
           }
 
-          // Chuyển đổi dữ liệu linh hoạt dù Firebase trả về Map hay List
           dynamic data = snapshot.data!.snapshot.value;
           List<Map<dynamic, dynamic>> logsList = [];
 
@@ -75,80 +73,88 @@ class HistoryScreen extends StatelessWidget {
             }
           }
 
-          // Đảo ngược danh sách để hiện tin mới nhất lên đầu
           logsList = logsList.reversed.toList();
-
-          if (logsList.isEmpty) {
-            return Center(
-              child: Text('Lịch sử chưa có dữ liệu hợp lệ', style: TextStyle(color: Colors.grey.shade500)),
-            );
-          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: logsList.length,
             itemBuilder: (context, index) {
               var log = logsList[index];
-              String action = log['action']?.toString() ?? 'Không rõ';
-              bool isClose = action.contains('Đóng');
-              String user = log['user']?.toString() ?? 'Ẩn danh';
+              String action = log['action']?.toString() ?? 'Không xác định';
+              
+              // LOGIC NHẬN DIỆN MỚI: Chuẩn hóa chuỗi để so sánh chính xác nhất
+              String normalizedAction = action.toLowerCase().trim();
+              bool isClose = normalizedAction.contains('dong') || 
+                             normalizedAction.contains('đóng') || 
+                             normalizedAction.contains('close') ||
+                             normalizedAction.contains('khoá') ||
+                             normalizedAction.contains('khóa') ||
+                             normalizedAction.contains('off');
+              
+              String user = log['user']?.toString() ?? 'Người dùng';
+              String time = log['time']?.toString() ?? '--:--';
 
-              return Card(
-                elevation: 0,
-                color: Colors.white,
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.grey.shade100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  // Thêm viền màu đậm để phân biệt rõ ràng
+                  border: Border.all(
+                    color: isClose ? Colors.red.shade200 : Colors.green.shade200,
+                    width: 1.5,
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isClose ? Colors.red.shade50 : Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isClose ? Colors.red.shade50 : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isClose ? Icons.lock_rounded : Icons.lock_open_rounded,
+                      color: isClose ? Colors.red : Colors.green,
+                      size: 26,
+                    ),
+                  ),
+                  title: Text(
+                    action,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: isClose ? Colors.red.shade800 : Colors.green.shade800,
+                    ),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          time,
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                         ),
-                        child: Icon(
-                          isClose ? Icons.lock_rounded : Icons.lock_open_rounded,
-                          color: isClose ? Colors.red.shade700 : Colors.green.shade700,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              action,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              log['time']?.toString() ?? 'Không rõ thời gian',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: user == 'Hệ thống' ? Colors.grey.shade100 : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          user,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: user == 'Hệ thống' ? Colors.grey : Colors.blue.shade700,
+                        const SizedBox(width: 8),
+                        Text("•", style: TextStyle(color: Colors.grey.shade400)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            user,
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -159,11 +165,11 @@ class HistoryScreen extends StatelessWidget {
       floatingActionButton: isAdmin
           ? FloatingActionButton.extended(
               onPressed: () => _showClearHistoryDialog(context),
-              backgroundColor: Colors.red.shade50,
-              foregroundColor: Colors.red,
-              elevation: 0,
-              icon: const Icon(Icons.delete_sweep_outlined),
-              label: const Text('Xóa lịch sử', style: TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 4,
+              icon: const Icon(Icons.delete_sweep_rounded),
+              label: const Text('XÓA LỊCH SỬ', style: TextStyle(fontWeight: FontWeight.bold)),
             )
           : null,
     );
